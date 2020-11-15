@@ -178,7 +178,7 @@ class MyVisitor(BCCVisitor):
     def visitSimple_expr(self, ctx: BCCParser.Simple_exprContext):
         res = self.visitTerm(ctx.term()[0])
         if len(ctx.term()) > 1:
-            for i in range(1,len(ctx.term())):
+            for i in range(1, len(ctx.term())):
                 op2 = self.visitTerm(ctx.term()[i])
                 if ctx.getChild(2*i).getText() == '+':
                     res = res + op2
@@ -197,11 +197,16 @@ class MyVisitor(BCCVisitor):
         if ctx.ID():
             for i in self.variables[::-1]:
                 if ctx.ID().getText() in i:
-                    if '+' == ctx.getText()[0]:
+                    if '+' in ctx.getText():
                         i[ctx.ID().getText()] += 1
-                    if '-' == ctx.getText()[0]:
+                    if '-' in ctx.getText():
                         i[ctx.ID().getText()] -= 1
-                    return [ctx.getText(), i[ctx.ID().getText()]]
+                    res = i[ctx.ID().getText()]
+                    if '+' == ctx.getText()[-1]:
+                        return res - 1
+                    if '-' == ctx.getText()[-1]:
+                        return res + 1
+                    return res
             else: 
                 self.printError(ctx, True)
         elif ctx.TK_NUM():
