@@ -66,10 +66,12 @@ class MyVisitor(BCCVisitor):
                 exit_loop = False
                 while ans and not exit_loop:
                     exit_loop = self.visitDo_block(ctx.do_block())
+                    ans = self.visitPar_lexpr(ctx.par_lexpr())
             elif ctx.CICLE().getText() == "until":
                 exit_loop = False
                 while not ans and not exit_loop:
                     exit_loop = self.visitDo_block(ctx.do_block())
+                    ans = self.visitPar_lexpr(ctx.par_lexpr())
         elif ctx.CICLE2():
             self.visitStmt_block(ctx.do_block())
             ans = self.visitPar_lexpr(ctx.par_lexpr())
@@ -77,10 +79,12 @@ class MyVisitor(BCCVisitor):
                 exit_loop = False
                 while ans and not exit_loop:
                     exit_loop = self.visitDo_block(ctx.do_block())
+                    ans = self.visitPar_lexpr(ctx.par_lexpr())
             elif ctx.CICLE2().getText() == "until":
                 exit_loop = False
                 while not ans and not exit_loop:
                     exit_loop = self.visitDo_block(ctx.do_block())
+                    ans = self.visitPar_lexpr(ctx.par_lexpr())
             else:
                 if not ans:
                     self.visitDo_block(ctx.do_block())
@@ -139,13 +143,12 @@ class MyVisitor(BCCVisitor):
     # Visit a parse tree produced by BCCParser#do_block.
     def visitDo_block(self, ctx: BCCParser.Do_blockContext):
         # falta definir el do 
-        self.visitStmt_block(ctx.stmt_block())
-        return self.visitChildren(ctx)
+        return self.visitStmt_block(ctx.stmt_block())
 
     # Visit a parse tree produced by BCCParser#par_lexpr.
     def visitPar_lexpr(self, ctx: BCCParser.Par_lexprContext):
-        self.visitLexpr(ctx.lexpr())
-        return self.visitChildren(ctx)
+        return self.visitLexpr(ctx.lexpr())
+
 
     # Visit a parse tree produced by BCCParser#lexpr.
     def visitLexpr(self, ctx: BCCParser.LexprContext):
@@ -172,7 +175,7 @@ class MyVisitor(BCCVisitor):
     # Visit a parse tree produced by BCCParser#rexpr.
     def visitRexpr(self, ctx: BCCParser.RexprContext):
         
-        return self.visitChildren(ctx)
+        return self.visitSimple_expr(ctx.simple_expr()[0])
 
     # Visit a parse tree produced by BCCParser#simple_expr.
     def visitSimple_expr(self, ctx: BCCParser.Simple_exprContext):
@@ -213,9 +216,9 @@ class MyVisitor(BCCVisitor):
             return int(ctx.TK_NUM().getText())
         elif ctx.TK_BOOL():
             return ctx.TK_BOOL().getText() == 'true'
-        elif ctx.lexpr():
-            return self.visitLexpr(ctx.lexpr())
-        else:
+        elif ctx.FID():
             return self.runFunc(self.functions[ctx.FID().getText()], ctx.lexpr())
+        else:
+            return self.visitLexpr(ctx.lexpr()[0])
         
     def runFunc(self, ctx, args): pass
