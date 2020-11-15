@@ -7,7 +7,7 @@ prog  : f* main_prog;
 
 f     : 'function' FID ':' DATATYPE '(' (var_dec (',' var_dec)*)? ')' stmt_var_list? stmt_block;
 
-    main_prog : stmt_var_list? stmt* 'end';
+main_prog : stmt_var_list? stmt* 'end';
 
 stmt_var_list : 'var' var_dec (',' var_dec)* ';';
 

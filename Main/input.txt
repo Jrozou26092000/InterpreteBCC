@@ -1,7 +1,5 @@
-var a:bool;
-a:=true;
-while(a)do{
-    print(1);
-    a:=false;
-}
+var x:num,y:num;
+y := 7;
+x := 8 + 9 - y-- * 3 * y++ - 5 * 4;
+print x;
 end

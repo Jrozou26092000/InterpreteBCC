@@ -1,3 +1,5 @@
+import sys
+
 from gen.BCCVisitor import BCCVisitor
 from gen.BCCParser import BCCParser
 
@@ -10,6 +12,7 @@ class MyVisitor(BCCVisitor):
 
     def printError(self, errorContext, flag): #True --> no existe.
         print("Error semantico")
+        sys.exit()
 
     # Visit a parse tree produced by BCCParser#prog.
     def visitProg(self, ctx: BCCParser.ProgContext):
@@ -115,29 +118,35 @@ class MyVisitor(BCCVisitor):
 
     # Visit a parse tree produced by BCCParser#assignation.
     def visitAssignation(self, ctx: BCCParser.AssignationContext):
-        if ctx.getChild(0) == ctx.ID():
-            if ctx.OPERATION(): 
-                ans = self.visitLexpr(ctx.lexpr())
-                if ctx.OPERATION().getText() == ":=":
-                    self.variables[0][ctx.ID().getText()] = ans
-                elif ctx.OPERATION().getText() == "+=":
-                    self.variables[ctx.ID().getText()] += ans
-                elif ctx.OPERATION().getText() == "-=":
-                    self.variables[ctx.ID().getText()] -= ans
-                elif ctx.OPERATION().getText() == "*=":
-                    self.variables[ctx.ID().getText()] *= ans
-                elif ctx.OPERATION().getText() == "/=":
-                    self.variables[ctx.ID().getText()] /= ans
-                elif ctx.OPERATION().getText() == "%=":
-                    self.variables[ctx.ID().getText()] %= ans
-                elif ctx.getChild(1).getText() == '++':
-                    self.variables[ctx.ID().getText()] += 1
-                elif ctx.getChild(1).getText() == '--':
-                    self.variables[ctx.ID().getText()] -= 1
-            elif ctx.getChild(0).getText() == '++':
-                self.variables[ctx.ID().getText()] += 1
-            elif ctx.getChild(0).getText() == '--':
-                self.variables[ctx.ID().getText()] -= 1
+        error = True
+        for i in self.variables[::-1]:
+            if ctx.ID().getText() in i:
+                error = False
+                if ctx.getChild(0) == ctx.ID():
+                    if ctx.OPERATION():
+                        ans = self.visitLexpr(ctx.lexpr())
+                        if ctx.OPERATION().getText() == ":=":
+                            i[ctx.ID().getText()] = ans
+                        elif ctx.OPERATION().getText() == "+=":
+                            i[ctx.ID().getText()] += ans
+                        elif ctx.OPERATION().getText() == "-=":
+                            i[ctx.ID().getText()] -= ans
+                        elif ctx.OPERATION().getText() == "*=":
+                            i[ctx.ID().getText()] *= ans
+                        elif ctx.OPERATION().getText() == "/=":
+                            i[ctx.ID().getText()] /= ans
+                        elif ctx.OPERATION().getText() == "%=":
+                            i[ctx.ID().getText()] %= ans
+                    elif ctx.getChild(1).getText() == '++':
+                        i[ctx.ID().getText()] += 1
+                    elif ctx.getChild(1).getText() == '--':
+                        i[ctx.ID().getText()] -= 1
+                elif ctx.getChild(0).getText() == '++':
+                    i[ctx.ID().getText()] += 1
+                elif ctx.getChild(0).getText() == '--':
+                    i[ctx.ID().getText()] -= 1
+        if error:
+            self.printError(ctx, error)
         return
 
     # Visit a parse tree produced by BCCParser#do_block.
@@ -156,7 +165,7 @@ class MyVisitor(BCCVisitor):
         if len(ctx.nexpr()) > 1:
             for i in range(1, len(ctx.nexpr())):
                 op2 = self.visitNexpr(ctx.nexpr()[i])
-                if ctx.getChild(2*i).getText() == 'or':
+                if ctx.getChild(2*i-1).getText() == 'or':
                     res = res or op2
                 else: 
                     res = res and op2
@@ -174,8 +183,24 @@ class MyVisitor(BCCVisitor):
 
     # Visit a parse tree produced by BCCParser#rexpr.
     def visitRexpr(self, ctx: BCCParser.RexprContext):
-        
-        return self.visitSimple_expr(ctx.simple_expr()[0])
+        res = self.visitSimple_expr(ctx.simple_expr()[0])
+        if len(ctx.simple_expr()) > 1:
+            op2 = self.visitSimple_expr(ctx.simple_expr()[1])
+            if ctx.getChild(1).getText() == '<':
+                res = res < op2
+            elif ctx.getChild(1).getText() == '==':
+                res = res == op2
+            elif ctx.getChild(1).getText() == '<=':
+                res = res <= op2
+            elif ctx.getChild(1).getText() == '>':
+                res = res > op2
+            elif ctx.getChild(1).getText() == '>=':
+                res = res >= op2
+            elif ctx.getChild(1).getText() == '!=':
+                res = res != op2
+            return res
+        else:
+            return res
 
     # Visit a parse tree produced by BCCParser#simple_expr.
     def visitSimple_expr(self, ctx: BCCParser.Simple_exprContext):
@@ -183,7 +208,7 @@ class MyVisitor(BCCVisitor):
         if len(ctx.term()) > 1:
             for i in range(1, len(ctx.term())):
                 op2 = self.visitTerm(ctx.term()[i])
-                if ctx.getChild(2*i).getText() == '+':
+                if ctx.getChild(2*i-1).getText() == '+':
                     res = res + op2
                 else: 
                     res = res - op2
@@ -193,7 +218,19 @@ class MyVisitor(BCCVisitor):
 
     # Visit a parse tree produced by BCCParser#term.
     def visitTerm(self, ctx: BCCParser.TermContext):
-        return self.visitChildren(ctx)
+        res = self.visitFactor(ctx.factor()[0])
+        if len(ctx.factor()) > 1:
+            for i in range(1, len(ctx.factor())):
+                op2 = self.visitFactor(ctx.factor()[i])
+                if ctx.getChild(2*i-1).getText() == '*':
+                    res = res * op2
+                elif ctx.getChild(2*i-1).getText() == '/':
+                    res = res / op2
+                elif ctx.getChild(2*i-1).getText() == '%':
+                    res = res % op2
+            return res
+        else:
+            return res
 
     # Visit a parse tree produced by BCCParser#factor.
     def visitFactor(self, ctx: BCCParser.FactorContext):
