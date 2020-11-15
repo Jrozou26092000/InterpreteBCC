@@ -1,5 +1,4 @@
 import sys
-import os
 from antlr4 import *
 from gen.BCCLexer import BCCLexer
 from gen.BCCParser import BCCParser
@@ -12,9 +11,7 @@ def main(argv):
     stream = CommonTokenStream(lexer)
     parser = BCCParser(stream)
     tree = parser.prog()
-    dirname = os.path.dirname(__file__)
-    file = open(dirname+"/Resultado.ArnoldC", "wt")
-    visitor = MyVisitor(file)
+    visitor = MyVisitor()
     visitor.visit(tree)
 
 
