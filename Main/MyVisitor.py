@@ -10,8 +10,8 @@ class MyVisitor(BCCVisitor):
         self.variables = list()
         self.variables.append(dict())
 
-    def printError(self, errorContext, flag): #True --> no existe.
-        print("Error semantico")
+    def printError(self, errorContext, flag):
+        print("Error semantico:" + flag)
         sys.exit()
 
     # Visit a parse tree produced by BCCParser#prog.
@@ -51,8 +51,9 @@ class MyVisitor(BCCVisitor):
             for context in self.variables[::-1]: 
                 if ctx.ID().getText() in context:
                     context[ctx.ID().getText()] = input()
-                else: 
-                    self.printError(ctx.ID(), True)
+                    return None
+            else:
+                self.printError(ctx.ID(), "Variable no declarada")
         elif ctx.IF():
             ans = self.visitPar_lexpr(ctx.par_lexpr())
             if ans:
@@ -158,7 +159,7 @@ class MyVisitor(BCCVisitor):
                 elif ctx.getChild(0).getText() == '--':
                     i[ctx.ID().getText()] -= 1
         if error:
-            self.printError(ctx, error)
+            self.printError(ctx, "variable no delclarada")
         return
 
     # Visit a parse tree produced by BCCParser#do_block.
@@ -258,7 +259,7 @@ class MyVisitor(BCCVisitor):
                         return res + 1
                     return res
             else: 
-                self.printError(ctx, True)
+                self.printError(ctx, "Variable no delcarada")
         elif ctx.TK_NUM():
             return int(ctx.TK_NUM().getText())
         elif ctx.TK_BOOL():
@@ -271,6 +272,8 @@ class MyVisitor(BCCVisitor):
     def run_func(self, ctx: BCCParser.FContext, args):
         self.variables.append(dict())
         i = 0
+        if len(ctx.var_dec()) != len(args):
+            self.printError(ctx, "la cantidad de argumentos de funcion no coinciden")
         for var_dec in ctx.var_dec():
             self.visitVar_dec(var_dec)
             self.variables[-1][var_dec.ID().getText()] = self.visitLexpr(args[i])
