@@ -1,5 +1,33 @@
-var x:num,y:num;
-y := 7;
-x := 8 + 9 - y-- * 3 * y++ - 5 * 4;
-print x;
+## función min(x, y)
+function @min:num (x:num, y:num)
+  {
+  until (x==3) do {
+    when(x<y) do break;
+    when(x==6) do{
+     x:=4;
+     next;
+    }
+    print x--;
+
+  }
+  return y;
+  }
+
+## función max(x, y)
+function @max:num (x:num, y:num)
+  {
+  if ((x < y) == false) do
+    {
+    return x;
+    }
+  else
+    {
+    return y;
+    }
+  }
+var a:num;
+print @min(8,6);
+print @max(1,2);
+a := 10;
+a %= 2;
 end

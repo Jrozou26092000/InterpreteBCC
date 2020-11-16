@@ -20,8 +20,8 @@ class MyVisitor(BCCVisitor):
 
     # Visit a parse tree produced by BCCParser#f.
     def visitF(self, ctx: BCCParser.FContext):
-        self.functions[ctx.FID().getText] = ctx
-        return self.visitChildren(ctx)
+        self.functions[ctx.FID().getText()] = ctx
+        return None
 
     # Visit a parse tree produced by BCCParser#main_prog.
     def visitMain_prog(self, ctx: BCCParser.Main_progContext):
@@ -38,7 +38,10 @@ class MyVisitor(BCCVisitor):
 
     # Visit a parse tree produced by BCCParser#stmt_block.
     def visitStmt_block(self, ctx: BCCParser.Stmt_blockContext):
-        return self.visitChildren(ctx)
+        for stmt in ctx.stmt():
+            res = self.visitStmt(stmt)
+            if res is not None:
+                return res
 
     # Visit a parse tree produced by BCCParser#stmt.
     def visitStmt(self, ctx: BCCParser.StmtContext):
@@ -53,46 +56,55 @@ class MyVisitor(BCCVisitor):
         elif ctx.IF():
             ans = self.visitPar_lexpr(ctx.par_lexpr())
             if ans:
-                self.visitDo_block(ctx.do_block())
+                return self.visitDo_block(ctx.do_block())
             else:
-                self.visitStmt_block(ctx.stmt_block())
+                return self.visitStmt_block(ctx.stmt_block())
         elif ctx.WHEN():
             ans = self.visitPar_lexpr(ctx.par_lexpr())
             if ans:
-                self.visitDo_block(ctx.do_block())
+                return self.visitDo_block(ctx.do_block())
+
         elif ctx.CICLE():
             ans = self.visitPar_lexpr(ctx.par_lexpr())
             if ctx.CICLE().getText() == "unless":
                 if not ans:
-                    self.visitDo_block(ctx.do_block())
+                    return self.visitDo_block(ctx.do_block())
             elif ctx.CICLE().getText() == "while":
-                exit_loop = False
-                while ans and not exit_loop:
+                exit_loop = ""
+                while ans and exit_loop != "break":
                     exit_loop = self.visitDo_block(ctx.do_block())
                     ans = self.visitPar_lexpr(ctx.par_lexpr())
+                if type(exit_loop) is not str:
+                    return exit_loop
             elif ctx.CICLE().getText() == "until":
-                exit_loop = False
-                while not ans and not exit_loop:
+                exit_loop = ""
+                while not ans and exit_loop != "break":
                     exit_loop = self.visitDo_block(ctx.do_block())
                     ans = self.visitPar_lexpr(ctx.par_lexpr())
+                if type(exit_loop) is not str:
+                    return exit_loop
         elif ctx.CICLE2():
             self.visitStmt_block(ctx.do_block())
             ans = self.visitPar_lexpr(ctx.par_lexpr())
             if ctx.CICLE2().getText() == "while":
-                exit_loop = False
-                while ans and not exit_loop:
+                exit_loop = ""
+                while ans and exit_loop != "break":
                     exit_loop = self.visitDo_block(ctx.do_block())
                     ans = self.visitPar_lexpr(ctx.par_lexpr())
+                if type(exit_loop) is not str:
+                    return exit_loop
             elif ctx.CICLE2().getText() == "until":
-                exit_loop = False
-                while not ans and not exit_loop:
+                exit_loop = ""
+                while not ans and exit_loop != "break":
                     exit_loop = self.visitDo_block(ctx.do_block())
                     ans = self.visitPar_lexpr(ctx.par_lexpr())
+                if type(exit_loop) is not str:
+                    return exit_loop
             else:
                 if not ans:
                     self.visitDo_block(ctx.do_block())
         elif ctx.RETURN():
-            return self.visitLexpr(ctx.lexpr())
+            return self.visitLexpr(ctx.lexpr()[0])
         elif ctx.LOOP():
             exit_loop = False
             while not exit_loop:
@@ -109,9 +121,9 @@ class MyVisitor(BCCVisitor):
                 exit_loop = self.visitDo_block(ctx.do_block())
                 self.visitAssignation(ctx.assignation())
         elif ctx.BREAK():
-            return True
+            return "break"
         elif ctx.NEXT():
-            return False
+            return "next"
         else:
             self.visitChildren(ctx)
         return None
@@ -151,13 +163,11 @@ class MyVisitor(BCCVisitor):
 
     # Visit a parse tree produced by BCCParser#do_block.
     def visitDo_block(self, ctx: BCCParser.Do_blockContext):
-        # falta definir el do 
         return self.visitStmt_block(ctx.stmt_block())
 
     # Visit a parse tree produced by BCCParser#par_lexpr.
     def visitPar_lexpr(self, ctx: BCCParser.Par_lexprContext):
         return self.visitLexpr(ctx.lexpr())
-
 
     # Visit a parse tree produced by BCCParser#lexpr.
     def visitLexpr(self, ctx: BCCParser.LexprContext):
@@ -254,8 +264,18 @@ class MyVisitor(BCCVisitor):
         elif ctx.TK_BOOL():
             return ctx.TK_BOOL().getText() == 'true'
         elif ctx.FID():
-            return self.runFunc(self.functions[ctx.FID().getText()], ctx.lexpr())
+            return self.run_func(self.functions[ctx.FID().getText()], ctx.lexpr())
         else:
             return self.visitLexpr(ctx.lexpr()[0])
         
-    def runFunc(self, ctx, args): pass
+    def run_func(self, ctx: BCCParser.FContext, args):
+        self.variables.append(dict())
+        i = 0
+        for var_dec in ctx.var_dec():
+            self.visitVar_dec(var_dec)
+            self.variables[-1][var_dec.ID().getText()] = self.visitLexpr(args[i])
+            i += 1
+        res = self.visitStmt_block(ctx.stmt_block())
+        self.variables.pop()
+        return res
+
