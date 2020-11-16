@@ -1,4 +1,4 @@
-# Generated from /home/juanr/Semestre 2020-2/Lenguajes de Programación/InterpreteBCC/grammar/BCC.g4 by ANTLR 4.8
+# Generated from /home/crisvo/IdeaProjects/InterpreteBCC/grammar/BCC.g4 by ANTLR 4.8
 # encoding: utf-8
 from antlr4 import *
 from io import StringIO

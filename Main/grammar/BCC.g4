@@ -62,7 +62,7 @@ factor: TK_NUM
 WS  :   [ \t\r\n]+ -> skip ; // Define whitespace rule, toss it out
 COMMENT : '#' ~[\r\n]* -> skip ;
 FID : '@' [a-zA-Z] [a-zA-Z_0-9]* ;
-TK_NUM : [0-9]+;
+TK_NUM : [0-9]+ ('.'[0-9]+)?;
 OPERATION : (':=' | '+=' | '-=' | '*=' | '*=' | '/='| '%=');
 PRINT : 'print';
 INPUT : 'input';

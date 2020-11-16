@@ -1,33 +1,14 @@
-## función min(x, y)
-function @min:num (x:num, y:num)
-  {
-  until (x==3) do {
-    when(x<y) do break;
-    when(x==6) do{
-     x:=4;
-     next;
-    }
-    print x--;
+function @suma1:num (a:num) {
+    return a+1;
+}
 
-  }
-  return y;
-  }
+function @suma1Ymult5:num (a:num) {
+    return @suma1(a)*5;
+}
 
-## función max(x, y)
-function @max:num (x:num, y:num)
-  {
-  if ((x < y) == false) do
-    {
-    return x;
-    }
-  else
-    {
-    return y;
-    }
-  }
-var a:num;
-print @min(8,6);
-print @max(1,2);
-a := 10;
-a %= 2;
-end
+var x:num;
+x:=1;
+x:= @suma1Ymult5(x);
+
+print x; # 10.0
+end;

@@ -9,14 +9,21 @@ class MyVisitor(BCCVisitor):
         self.functions = dict()
         self.variables = list()
         self.variables.append(dict())
+        self.return_context = list()
 
     def printError(self, errorContext, flag):
-        print("Error semantico:" + flag)
+        line = errorContext.getChild(0).getSymbol().line
+        error = "<"+str(line)+">"+"Error semantico: " + flag + " en: "
+        for child in errorContext.getChildren():
+            error += child.getText()+" "
+        print(error)
         sys.exit()
 
     # Visit a parse tree produced by BCCParser#prog.
     def visitProg(self, ctx: BCCParser.ProgContext):
-        return self.visitChildren(ctx)
+        for f in ctx.f():
+            self.visitF(f)
+        self.visitMain_prog(ctx.main_prog())
 
     # Visit a parse tree produced by BCCParser#f.
     def visitF(self, ctx: BCCParser.FContext):
@@ -25,16 +32,20 @@ class MyVisitor(BCCVisitor):
 
     # Visit a parse tree produced by BCCParser#main_prog.
     def visitMain_prog(self, ctx: BCCParser.Main_progContext):
-        return self.visitChildren(ctx)
+        if ctx.stmt_var_list():
+            self.visitStmt_var_list(ctx.stmt_var_list())
+        for stmt in ctx.stmt():
+            self.visitStmt(stmt)
 
     # Visit a parse tree produced by BCCParser#stmt_var_list.
     def visitStmt_var_list(self, ctx: BCCParser.Stmt_var_listContext):
-        return self.visitChildren(ctx)
+        for child in ctx.var_dec():
+            self.visitVar_dec(child)
 
     # Visit a parse tree produced by BCCParser#var_dec.
     def visitVar_dec(self, ctx: BCCParser.Var_decContext):
-        self.variables[-1][ctx.ID().getText()] = False if ctx.DATATYPE().getText() == 'bool' else 0
-        return self.visitChildren(ctx)
+        self.variables[-1][ctx.ID().getText()] = False if ctx.DATATYPE().getText() == 'bool' else 0.0
+        return
 
     # Visit a parse tree produced by BCCParser#stmt_block.
     def visitStmt_block(self, ctx: BCCParser.Stmt_blockContext):
@@ -105,6 +116,7 @@ class MyVisitor(BCCVisitor):
                 if not ans:
                     self.visitDo_block(ctx.do_block())
         elif ctx.RETURN():
+            self.return_context = ctx
             return self.visitLexpr(ctx.lexpr()[0])
         elif ctx.LOOP():
             exit_loop = False
@@ -126,7 +138,7 @@ class MyVisitor(BCCVisitor):
         elif ctx.NEXT():
             return "next"
         else:
-            self.visitChildren(ctx)
+            self.visitAssignation(ctx.assignation())
         return None
 
     # Visit a parse tree produced by BCCParser#assignation.
@@ -138,6 +150,8 @@ class MyVisitor(BCCVisitor):
                 if ctx.getChild(0) == ctx.ID():
                     if ctx.OPERATION():
                         ans = self.visitLexpr(ctx.lexpr())
+                        if type(i[ctx.ID().getText()]) is not type(ans):
+                            self.printError(ctx, "Asignacion de tipo de dato equivovado")
                         if ctx.OPERATION().getText() == ":=":
                             i[ctx.ID().getText()] = ans
                         elif ctx.OPERATION().getText() == "+=":
@@ -261,24 +275,34 @@ class MyVisitor(BCCVisitor):
             else: 
                 self.printError(ctx, "Variable no delcarada")
         elif ctx.TK_NUM():
-            return int(ctx.TK_NUM().getText())
+            return float(ctx.TK_NUM().getText())
         elif ctx.TK_BOOL():
             return ctx.TK_BOOL().getText() == 'true'
         elif ctx.FID():
-            return self.run_func(self.functions[ctx.FID().getText()], ctx.lexpr())
+            return self.run_func(self.functions[ctx.FID().getText()], ctx.lexpr(), ctx)
         else:
             return self.visitLexpr(ctx.lexpr()[0])
         
-    def run_func(self, ctx: BCCParser.FContext, args):
+    def run_func(self, ctx: BCCParser.FContext, args, current):
         self.variables.append(dict())
         i = 0
         if len(ctx.var_dec()) != len(args):
-            self.printError(ctx, "la cantidad de argumentos de funcion no coinciden")
+            self.printError(current, "la cantidad de argumentos de funcion no coinciden")
+        res = list()
+        for arg in args:
+            res.append(self.visitLexpr(arg))
         for var_dec in ctx.var_dec():
             self.visitVar_dec(var_dec)
-            self.variables[-1][var_dec.ID().getText()] = self.visitLexpr(args[i])
+            self.variables[-1][var_dec.ID().getText()] = res[i]
             i += 1
+        if ctx.stmt_var_list():
+            self.visitStmt_var_list(ctx.stmt_var_list())
         res = self.visitStmt_block(ctx.stmt_block())
         self.variables.pop()
+        tipo = 1.0
+        if ctx.DATATYPE() == "bool":
+            tipo = True
+        if type(res) is not type(tipo):
+            self.printError(self.return_context, "Asignacion de tipo de dato equivovado")
         return res
 
